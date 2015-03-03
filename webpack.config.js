@@ -8,7 +8,8 @@ module.exports = {
       'listview': ['./examples/listview/app.js'],
       'timeline': ['./examples/timeline/app.js'],
       'css-layout': ['./examples/css-layout/app.js'],
-      'words-splitter': ['./examples/words-splitter/app.js']
+      'words-splitter': ['./examples/words-splitter/app.js'],
+      'scrollbar': ['./examples/scrollbar/app.js'],
     },
 
     output: {

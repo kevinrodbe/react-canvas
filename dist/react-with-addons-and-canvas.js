@@ -677,7 +677,7 @@ var ListView = React.createClass({displayName: "ListView",
       e.preventDefault();
 
       var event = e.nativeEvent;
-      this.scroller.scrollBy(0, -(event.wheelDeltaY / 2));
+      this.scroller.scrollBy(0, -Math.round(event.wheelDeltaY / 2));
     }
   },
 
@@ -8411,8 +8411,8 @@ module.exports = keyMirror;
 
 'use strict';
 
-var ReactLink = __webpack_require__(91);
-var ReactStateSetters = __webpack_require__(92);
+var ReactLink = __webpack_require__(92);
+var ReactStateSetters = __webpack_require__(93);
 
 /**
  * A simple mixin around ReactLink.forState().
@@ -8607,7 +8607,7 @@ module.exports = React;
 
 'use strict';
 
-var shallowEqual = __webpack_require__(93);
+var shallowEqual = __webpack_require__(91);
 
 /**
  * If your React component's render function is "pure", e.g. it will render the
@@ -15896,6 +15896,54 @@ module.exports = ExecutionEnvironment;
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
+ * @providesModule shallowEqual
+ */
+
+'use strict';
+
+/**
+ * Performs equality by iterating through keys on an object and returning
+ * false when any key has values which are not strictly equal between
+ * objA and objB. Returns true when the values of all keys are strictly equal.
+ *
+ * @return {boolean}
+ */
+function shallowEqual(objA, objB) {
+  if (objA === objB) {
+    return true;
+  }
+  var key;
+  // Test for A's keys different from B.
+  for (key in objA) {
+    if (objA.hasOwnProperty(key) &&
+        (!objB.hasOwnProperty(key) || objA[key] !== objB[key])) {
+      return false;
+    }
+  }
+  // Test for B's keys missing from A.
+  for (key in objB) {
+    if (objB.hasOwnProperty(key) && !objA.hasOwnProperty(key)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+module.exports = shallowEqual;
+
+
+/***/ },
+/* 92 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * Copyright 2013-2015, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ *
  * @providesModule ReactLink
  * @typechecks static-only
  */
@@ -15962,7 +16010,7 @@ module.exports = ReactLink;
 
 
 /***/ },
-/* 92 */
+/* 93 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -16069,54 +16117,6 @@ ReactStateSetters.Mixin = {
 };
 
 module.exports = ReactStateSetters;
-
-
-/***/ },
-/* 93 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * Copyright 2013-2015, Facebook, Inc.
- * All rights reserved.
- *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
- *
- * @providesModule shallowEqual
- */
-
-'use strict';
-
-/**
- * Performs equality by iterating through keys on an object and returning
- * false when any key has values which are not strictly equal between
- * objA and objB. Returns true when the values of all keys are strictly equal.
- *
- * @return {boolean}
- */
-function shallowEqual(objA, objB) {
-  if (objA === objB) {
-    return true;
-  }
-  var key;
-  // Test for A's keys different from B.
-  for (key in objA) {
-    if (objA.hasOwnProperty(key) &&
-        (!objB.hasOwnProperty(key) || objA[key] !== objB[key])) {
-      return false;
-    }
-  }
-  // Test for B's keys missing from A.
-  for (key in objB) {
-    if (objB.hasOwnProperty(key) && !objA.hasOwnProperty(key)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-module.exports = shallowEqual;
 
 
 /***/ },
@@ -17170,11 +17170,11 @@ module.exports = EventConstants;
 
 'use strict';
 
-var EventPluginRegistry = __webpack_require__(152);
+var EventPluginRegistry = __webpack_require__(154);
 var EventPluginUtils = __webpack_require__(76);
 
-var accumulateInto = __webpack_require__(153);
-var forEachAccumulated = __webpack_require__(154);
+var accumulateInto = __webpack_require__(152);
+var forEachAccumulated = __webpack_require__(153);
 var invariant = __webpack_require__(23);
 
 /**
@@ -17454,8 +17454,8 @@ module.exports = EventPluginHub;
 var EventConstants = __webpack_require__(101);
 var EventPluginHub = __webpack_require__(102);
 
-var accumulateInto = __webpack_require__(153);
-var forEachAccumulated = __webpack_require__(154);
+var accumulateInto = __webpack_require__(152);
+var forEachAccumulated = __webpack_require__(153);
 
 var PropagationPhases = EventConstants.PropagationPhases;
 var getListener = EventPluginHub.getListener;
@@ -17599,7 +17599,7 @@ module.exports = EventPropagators;
 
 var EventConstants = __webpack_require__(101);
 var EventPluginHub = __webpack_require__(102);
-var EventPluginRegistry = __webpack_require__(152);
+var EventPluginRegistry = __webpack_require__(154);
 var ReactEventEmitterMixin = __webpack_require__(155);
 var ViewportMetrics = __webpack_require__(156);
 
@@ -22264,7 +22264,7 @@ var SyntheticEvent = __webpack_require__(106);
 var getActiveElement = __webpack_require__(174);
 var isTextInputElement = __webpack_require__(164);
 var keyOf = __webpack_require__(97);
-var shallowEqual = __webpack_require__(93);
+var shallowEqual = __webpack_require__(91);
 
 var topLevelTypes = EventConstants.topLevelTypes;
 
@@ -23791,6 +23791,110 @@ module.exports = performance || {};
 /***/ function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {/**
+ * Copyright 2014-2015, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ * @providesModule accumulateInto
+ */
+
+'use strict';
+
+var invariant = __webpack_require__(23);
+
+/**
+ *
+ * Accumulates items that must not be null or undefined into the first one. This
+ * is used to conserve memory by avoiding array allocations, and thus sacrifices
+ * API cleanness. Since `current` can be null before being passed in and not
+ * null after this function, make sure to assign it back to `current`:
+ *
+ * `a = accumulateInto(a, b);`
+ *
+ * This API should be sparingly used. Try `accumulate` for something cleaner.
+ *
+ * @return {*|array<*>} An accumulation of items.
+ */
+
+function accumulateInto(current, next) {
+  ("production" !== process.env.NODE_ENV ? invariant(
+    next != null,
+    'accumulateInto(...): Accumulated items must not be null or undefined.'
+  ) : invariant(next != null));
+  if (current == null) {
+    return next;
+  }
+
+  // Both are not empty. Warning: Never call x.concat(y) when you are not
+  // certain that x is an Array (x could be a string with concat method).
+  var currentIsArray = Array.isArray(current);
+  var nextIsArray = Array.isArray(next);
+
+  if (currentIsArray && nextIsArray) {
+    current.push.apply(current, next);
+    return current;
+  }
+
+  if (currentIsArray) {
+    current.push(next);
+    return current;
+  }
+
+  if (nextIsArray) {
+    // A bit too dangerous to mutate `next`.
+    return [current].concat(next);
+  }
+
+  return [current, next];
+}
+
+module.exports = accumulateInto;
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(25)))
+
+/***/ },
+/* 153 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * Copyright 2013-2015, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ * @providesModule forEachAccumulated
+ */
+
+'use strict';
+
+/**
+ * @param {array} an "accumulation" of items which is either an Array or
+ * a single item. Useful when paired with the `accumulate` module. This is a
+ * simple utility that allows us to reason about a collection of items, but
+ * handling the case when there is exactly one item (and we do not need to
+ * allocate an array).
+ */
+var forEachAccumulated = function(arr, cb, scope) {
+  if (Array.isArray(arr)) {
+    arr.forEach(cb, scope);
+  } else if (arr) {
+    cb.call(scope, arr);
+  }
+};
+
+module.exports = forEachAccumulated;
+
+
+/***/ },
+/* 154 */
+/***/ function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(process) {/**
  * Copyright 2013-2015, Facebook, Inc.
  * All rights reserved.
  *
@@ -24068,110 +24172,6 @@ var EventPluginRegistry = {
 module.exports = EventPluginRegistry;
 
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(25)))
-
-/***/ },
-/* 153 */
-/***/ function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(process) {/**
- * Copyright 2014-2015, Facebook, Inc.
- * All rights reserved.
- *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
- *
- * @providesModule accumulateInto
- */
-
-'use strict';
-
-var invariant = __webpack_require__(23);
-
-/**
- *
- * Accumulates items that must not be null or undefined into the first one. This
- * is used to conserve memory by avoiding array allocations, and thus sacrifices
- * API cleanness. Since `current` can be null before being passed in and not
- * null after this function, make sure to assign it back to `current`:
- *
- * `a = accumulateInto(a, b);`
- *
- * This API should be sparingly used. Try `accumulate` for something cleaner.
- *
- * @return {*|array<*>} An accumulation of items.
- */
-
-function accumulateInto(current, next) {
-  ("production" !== process.env.NODE_ENV ? invariant(
-    next != null,
-    'accumulateInto(...): Accumulated items must not be null or undefined.'
-  ) : invariant(next != null));
-  if (current == null) {
-    return next;
-  }
-
-  // Both are not empty. Warning: Never call x.concat(y) when you are not
-  // certain that x is an Array (x could be a string with concat method).
-  var currentIsArray = Array.isArray(current);
-  var nextIsArray = Array.isArray(next);
-
-  if (currentIsArray && nextIsArray) {
-    current.push.apply(current, next);
-    return current;
-  }
-
-  if (currentIsArray) {
-    current.push(next);
-    return current;
-  }
-
-  if (nextIsArray) {
-    // A bit too dangerous to mutate `next`.
-    return [current].concat(next);
-  }
-
-  return [current, next];
-}
-
-module.exports = accumulateInto;
-
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(25)))
-
-/***/ },
-/* 154 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * Copyright 2013-2015, Facebook, Inc.
- * All rights reserved.
- *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
- *
- * @providesModule forEachAccumulated
- */
-
-'use strict';
-
-/**
- * @param {array} an "accumulation" of items which is either an Array or
- * a single item. Useful when paired with the `accumulate` module. This is a
- * simple utility that allows us to reason about a collection of items, but
- * handling the case when there is exactly one item (and we do not need to
- * allocate an array).
- */
-var forEachAccumulated = function(arr, cb, scope) {
-  if (Array.isArray(arr)) {
-    arr.forEach(cb, scope);
-  } else if (arr) {
-    cb.call(scope, arr);
-  }
-};
-
-module.exports = forEachAccumulated;
-
 
 /***/ },
 /* 155 */
@@ -24925,7 +24925,7 @@ module.exports = SyntheticMouseEvent;
 
 'use strict';
 
-var focusNode = __webpack_require__(192);
+var focusNode = __webpack_require__(194);
 
 var AutoFocusMixin = {
   componentDidMount: function() {
@@ -24957,8 +24957,8 @@ module.exports = AutoFocusMixin;
 
 var ReactBrowserEventEmitter = __webpack_require__(104);
 
-var accumulateInto = __webpack_require__(153);
-var forEachAccumulated = __webpack_require__(154);
+var accumulateInto = __webpack_require__(152);
+var forEachAccumulated = __webpack_require__(153);
 var invariant = __webpack_require__(23);
 
 function remove(event) {
@@ -25016,10 +25016,10 @@ module.exports = LocalEventTrapMixin;
 
 'use strict';
 
-var Danger = __webpack_require__(193);
+var Danger = __webpack_require__(192);
 var ReactMultiChildUpdateTypes = __webpack_require__(45);
 
-var setTextContent = __webpack_require__(194);
+var setTextContent = __webpack_require__(193);
 var invariant = __webpack_require__(23);
 
 /**
@@ -25455,7 +25455,7 @@ module.exports = getUnboundedScrollPosition;
 var ReactDOMSelection = __webpack_require__(195);
 
 var containsNode = __webpack_require__(143);
-var focusNode = __webpack_require__(192);
+var focusNode = __webpack_require__(194);
 var getActiveElement = __webpack_require__(174);
 
 function isInDocument(node) {
@@ -26610,39 +26610,6 @@ module.exports = getEventModifierState;
 /* 192 */
 /***/ function(module, exports, __webpack_require__) {
 
-/**
- * Copyright 2014-2015, Facebook, Inc.
- * All rights reserved.
- *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
- *
- * @providesModule focusNode
- */
-
-"use strict";
-
-/**
- * @param {DOMElement} node input/textarea to focus
- */
-function focusNode(node) {
-  // IE8 can throw "Can't move focus to the control because it is invisible,
-  // not enabled, or of a type that does not accept the focus." for all kinds of
-  // reasons that are too expensive and fragile to test.
-  try {
-    node.focus();
-  } catch(e) {
-  }
-}
-
-module.exports = focusNode;
-
-
-/***/ },
-/* 193 */
-/***/ function(module, exports, __webpack_require__) {
-
 /* WEBPACK VAR INJECTION */(function(process) {/**
  * Copyright 2013-2015, Facebook, Inc.
  * All rights reserved.
@@ -26830,7 +26797,7 @@ module.exports = Danger;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(25)))
 
 /***/ },
-/* 194 */
+/* 193 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -26873,6 +26840,39 @@ if (ExecutionEnvironment.canUseDOM) {
 }
 
 module.exports = setTextContent;
+
+
+/***/ },
+/* 194 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * Copyright 2014-2015, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ * @providesModule focusNode
+ */
+
+"use strict";
+
+/**
+ * @param {DOMElement} node input/textarea to focus
+ */
+function focusNode(node) {
+  // IE8 can throw "Can't move focus to the control because it is invisible,
+  // not enabled, or of a type that does not accept the focus." for all kinds of
+  // reasons that are too expensive and fragile to test.
+  try {
+    node.focus();
+  } catch(e) {
+  }
+}
+
+module.exports = focusNode;
 
 
 /***/ },

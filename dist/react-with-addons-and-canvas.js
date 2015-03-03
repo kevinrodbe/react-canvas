@@ -524,6 +524,7 @@ var Text = createComponent('Text', LayerMixin, {
 
     layer.type = 'text';
     layer.text = childrenAsString(props.children);
+    layer.wordsSplitter = props.wordsSplitter;
 
     layer.color = style.color;
     layer.fontFace = style.fontFace;
@@ -847,12 +848,12 @@ var _zeroMetrics = {
   lines: []
 };
 
-function splitText (text) {
-  return text.split(' ');
+function splitText (text, wordsSplitter) {
+  return text.split(wordsSplitter);
 }
 
-function getCacheKey (text, width, fontFace, fontSize, lineHeight) {
-  return text + width + fontFace.id + fontSize + lineHeight;
+function getCacheKey (text, width, fontFace, fontSize, lineHeight, wordsSplitter) {
+  return text + width + fontFace.id + fontSize + lineHeight + wordsSplitter;
 }
 
 /**
@@ -865,8 +866,8 @@ function getCacheKey (text, width, fontFace, fontSize, lineHeight) {
  * @param {Number} lineHeight The line height in CSS pixels
  * @return {Object} Measured text size with `width` and `height` members.
  */
-module.exports = function measureText (text, width, fontFace, fontSize, lineHeight) {
-  var cacheKey = getCacheKey(text, width, fontFace, fontSize, lineHeight);
+module.exports = function measureText (text, width, fontFace, fontSize, lineHeight, wordsSplitter) {
+  var cacheKey = getCacheKey(text, width, fontFace, fontSize, lineHeight, wordsSplitter);
   var cached = _cache[cacheKey];
   if (cached) {
     return cached;
@@ -897,17 +898,17 @@ module.exports = function measureText (text, width, fontFace, fontSize, lineHeig
   } else {
     // Break into multiple lines.
     measuredSize.width = width;
-    words = splitText(text);
+    words = splitText(text, wordsSplitter);
     currentLine = '';
 
     // This needs to be optimized!
     while (words.length) {
-      tryLine = currentLine + words[0] + ' ';
+      tryLine = currentLine + words[0] + wordsSplitter;
       textMetrics = ctx.measureText(tryLine);
       if (textMetrics.width > width) {
         measuredSize.height += lineHeight;
         measuredSize.lines.push({width: lastMeasuredWidth, text: currentLine.trim()});
-        currentLine = words[0] + ' ';
+        currentLine = words[0] + wordsSplitter;
         lastMeasuredWidth = ctx.measureText(currentLine.trim()).width;
       } else {
         currentLine = tryLine;
@@ -1790,7 +1791,8 @@ function drawTextRenderLayer (ctx, layer) {
     fontSize: layer.fontSize,
     lineHeight: layer.lineHeight,
     textAlign: layer.textAlign,
-    color: layer.color
+    color: layer.color,
+    wordsSplitter: layer.wordsSplitter
   });
 }
 
@@ -3633,13 +3635,15 @@ function drawText (ctx, text, x, y, width, height, fontFace, options) {
   options.textAlign = options.textAlign || 'left';
   options.backgroundColor = options.backgroundColor || 'transparent';
   options.color = options.color || '#000';
+  options.wordsSplitter = options.hasOwnProperty('wordsSplitter') && options.wordsSplitter !== undefined ? options.wordsSplitter : ' ';
 
   textMetrics = measureText(
     text,
     width,
     fontFace,
     options.fontSize,
-    options.lineHeight
+    options.lineHeight,
+    options.wordsSplitter
   );
 
   ctx.save();
@@ -3670,9 +3674,12 @@ function drawText (ctx, text, x, y, width, height, fontFace, options) {
         currX = x;
     }
 
-    if ((index < textMetrics.lines.length - 1) &&
-      ((options.fontSize + options.lineHeight * (index + 1)) > height)) {
-      currText = currText.replace(/\,?\s?\w+$/, '…');
+    if ((index < textMetrics.lines.length - 1) && ((options.fontSize + options.lineHeight * (index + 1)) > height)) {
+      if (line.width + options.fontSize > width && options.wordsSplitter != ' ') {
+        currText = currText.replace(/.{2}$/, '…');
+      } else {
+        currText += '…'
+      }
     }
 
     if (currY <= (height + y)) {
@@ -7010,7 +7017,7 @@ module.exports = ReactComponentEnvironment;
 
 'use strict';
 
-var keyMirror = __webpack_require__(51);
+var keyMirror = __webpack_require__(54);
 
 /**
  * When a component's children are updated, a series of update configuration
@@ -7050,9 +7057,9 @@ module.exports = ReactMultiChildUpdateTypes;
 
 var ReactReconciler = __webpack_require__(40);
 
-var flattenChildren = __webpack_require__(52);
-var instantiateReactComponent = __webpack_require__(53);
-var shouldUpdateReactComponent = __webpack_require__(54);
+var flattenChildren = __webpack_require__(51);
+var instantiateReactComponent = __webpack_require__(52);
+var shouldUpdateReactComponent = __webpack_require__(53);
 
 /**
  * ReactChildReconciler provides helpers for initializing or updating a set of
@@ -7787,64 +7794,6 @@ module.exports = emptyFunction;
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @providesModule keyMirror
- * @typechecks static-only
- */
-
-'use strict';
-
-var invariant = __webpack_require__(23);
-
-/**
- * Constructs an enumeration with keys equal to their value.
- *
- * For example:
- *
- *   var COLORS = keyMirror({blue: null, red: null});
- *   var myColor = COLORS.blue;
- *   var isColorValid = !!COLORS[myColor];
- *
- * The last line could not be performed if the values of the generated enum were
- * not equal to their keys.
- *
- *   Input:  {key1: val1, key2: val2}
- *   Output: {key1: key1, key2: key2}
- *
- * @param {object} obj
- * @return {object}
- */
-var keyMirror = function(obj) {
-  var ret = {};
-  var key;
-  ("production" !== process.env.NODE_ENV ? invariant(
-    obj instanceof Object && !Array.isArray(obj),
-    'keyMirror(...): Argument must be an object.'
-  ) : invariant(obj instanceof Object && !Array.isArray(obj)));
-  for (key in obj) {
-    if (!obj.hasOwnProperty(key)) {
-      continue;
-    }
-    ret[key] = key;
-  }
-  return ret;
-};
-
-module.exports = keyMirror;
-
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(25)))
-
-/***/ },
-/* 52 */
-/***/ function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(process) {/**
- * Copyright 2013-2015, Facebook, Inc.
- * All rights reserved.
- *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
- *
  * @providesModule flattenChildren
  */
 
@@ -7895,7 +7844,7 @@ module.exports = flattenChildren;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(25)))
 
 /***/ },
-/* 53 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {/**
@@ -8035,7 +7984,7 @@ module.exports = instantiateReactComponent;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(25)))
 
 /***/ },
-/* 54 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {/**
@@ -8138,6 +8087,64 @@ function shouldUpdateReactComponent(prevElement, nextElement) {
 }
 
 module.exports = shouldUpdateReactComponent;
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(25)))
+
+/***/ },
+/* 54 */
+/***/ function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(process) {/**
+ * Copyright 2013-2015, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ * @providesModule keyMirror
+ * @typechecks static-only
+ */
+
+'use strict';
+
+var invariant = __webpack_require__(23);
+
+/**
+ * Constructs an enumeration with keys equal to their value.
+ *
+ * For example:
+ *
+ *   var COLORS = keyMirror({blue: null, red: null});
+ *   var myColor = COLORS.blue;
+ *   var isColorValid = !!COLORS[myColor];
+ *
+ * The last line could not be performed if the values of the generated enum were
+ * not equal to their keys.
+ *
+ *   Input:  {key1: val1, key2: val2}
+ *   Output: {key1: key1, key2: key2}
+ *
+ * @param {object} obj
+ * @return {object}
+ */
+var keyMirror = function(obj) {
+  var ret = {};
+  var key;
+  ("production" !== process.env.NODE_ENV ? invariant(
+    obj instanceof Object && !Array.isArray(obj),
+    'keyMirror(...): Argument must be an object.'
+  ) : invariant(obj instanceof Object && !Array.isArray(obj)));
+  for (key in obj) {
+    if (!obj.hasOwnProperty(key)) {
+      continue;
+    }
+    ret[key] = key;
+  }
+  return ret;
+};
+
+module.exports = keyMirror;
 
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(25)))
 
@@ -10599,7 +10606,7 @@ module.exports = ReactElement;
 
 'use strict';
 
-var keyMirror = __webpack_require__(51);
+var keyMirror = __webpack_require__(54);
 
 var ReactPropTypeLocations = keyMirror({
   prop: null,
@@ -11089,7 +11096,7 @@ var ReactUpdates = __webpack_require__(22);
 var assign = __webpack_require__(24);
 var emptyObject = __webpack_require__(28);
 var invariant = __webpack_require__(23);
-var shouldUpdateReactComponent = __webpack_require__(54);
+var shouldUpdateReactComponent = __webpack_require__(53);
 var warning = __webpack_require__(42);
 
 function getDeclarationErrorAddendum(component) {
@@ -12577,7 +12584,7 @@ var ReactUpdateQueue = __webpack_require__(108);
 
 var assign = __webpack_require__(24);
 var invariant = __webpack_require__(23);
-var keyMirror = __webpack_require__(51);
+var keyMirror = __webpack_require__(54);
 var keyOf = __webpack_require__(97);
 var warning = __webpack_require__(42);
 
@@ -14415,10 +14422,10 @@ var ReactUpdates = __webpack_require__(22);
 var emptyObject = __webpack_require__(28);
 var containsNode = __webpack_require__(143);
 var getReactRootElementInContainer = __webpack_require__(144);
-var instantiateReactComponent = __webpack_require__(53);
+var instantiateReactComponent = __webpack_require__(52);
 var invariant = __webpack_require__(23);
 var setInnerHTML = __webpack_require__(145);
-var shouldUpdateReactComponent = __webpack_require__(54);
+var shouldUpdateReactComponent = __webpack_require__(53);
 var warning = __webpack_require__(42);
 
 var SEPARATOR = ReactInstanceHandles.SEPARATOR;
@@ -15649,7 +15656,7 @@ var ReactServerRenderingTransaction =
   __webpack_require__(146);
 
 var emptyObject = __webpack_require__(28);
-var instantiateReactComponent = __webpack_require__(53);
+var instantiateReactComponent = __webpack_require__(52);
 var invariant = __webpack_require__(23);
 
 /**
@@ -17087,7 +17094,7 @@ module.exports = performanceNow;
 
 'use strict';
 
-var keyMirror = __webpack_require__(51);
+var keyMirror = __webpack_require__(54);
 
 var PropagationPhases = keyMirror({bubbled: null, captured: null});
 
@@ -17593,11 +17600,11 @@ module.exports = EventPropagators;
 var EventConstants = __webpack_require__(101);
 var EventPluginHub = __webpack_require__(102);
 var EventPluginRegistry = __webpack_require__(152);
-var ReactEventEmitterMixin = __webpack_require__(156);
-var ViewportMetrics = __webpack_require__(157);
+var ReactEventEmitterMixin = __webpack_require__(155);
+var ViewportMetrics = __webpack_require__(156);
 
 var assign = __webpack_require__(24);
-var isEventSupported = __webpack_require__(158);
+var isEventSupported = __webpack_require__(157);
 
 /**
  * Summary of `ReactBrowserEventEmitter` event handling:
@@ -18004,7 +18011,7 @@ var PooledClass = __webpack_require__(37);
 
 var assign = __webpack_require__(24);
 var emptyFunction = __webpack_require__(50);
-var getEventTarget = __webpack_require__(155);
+var getEventTarget = __webpack_require__(158);
 
 /**
  * @interface Event
@@ -18867,7 +18874,7 @@ var ReactPerf = __webpack_require__(39);
 var assign = __webpack_require__(24);
 var escapeTextContentForBrowser = __webpack_require__(114);
 var invariant = __webpack_require__(23);
-var isEventSupported = __webpack_require__(158);
+var isEventSupported = __webpack_require__(157);
 var keyOf = __webpack_require__(97);
 var warning = __webpack_require__(42);
 
@@ -19909,7 +19916,7 @@ var ExecutionEnvironment = __webpack_require__(90);
 var ReactUpdates = __webpack_require__(22);
 var SyntheticEvent = __webpack_require__(106);
 
-var isEventSupported = __webpack_require__(158);
+var isEventSupported = __webpack_require__(157);
 var isTextInputElement = __webpack_require__(164);
 var keyOf = __webpack_require__(97);
 
@@ -20892,7 +20899,7 @@ var ReactBrowserComponentMixin = __webpack_require__(122);
 var ReactClass = __webpack_require__(79);
 var ReactElement = __webpack_require__(68);
 
-var keyMirror = __webpack_require__(51);
+var keyMirror = __webpack_require__(54);
 
 var button = ReactElement.createFactory('button');
 
@@ -21845,7 +21852,7 @@ var ReactMount = __webpack_require__(85);
 var ReactUpdates = __webpack_require__(22);
 
 var assign = __webpack_require__(24);
-var getEventTarget = __webpack_require__(155);
+var getEventTarget = __webpack_require__(158);
 var getUnboundedScrollPosition = __webpack_require__(171);
 
 /**
@@ -24178,41 +24185,6 @@ module.exports = forEachAccumulated;
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
- * @providesModule getEventTarget
- * @typechecks static-only
- */
-
-'use strict';
-
-/**
- * Gets the target node from a native browser event by accounting for
- * inconsistencies in browser DOM APIs.
- *
- * @param {object} nativeEvent Native browser event.
- * @return {DOMEventTarget} Target node.
- */
-function getEventTarget(nativeEvent) {
-  var target = nativeEvent.target || nativeEvent.srcElement || window;
-  // Safari may fire events on text nodes (Node.TEXT_NODE is 3).
-  // @see http://www.quirksmode.org/js/events_properties.html
-  return target.nodeType === 3 ? target.parentNode : target;
-}
-
-module.exports = getEventTarget;
-
-
-/***/ },
-/* 156 */
-/***/ function(module, exports, __webpack_require__) {
-
-/**
- * Copyright 2013-2015, Facebook, Inc.
- * All rights reserved.
- *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
- *
  * @providesModule ReactEventEmitterMixin
  */
 
@@ -24256,7 +24228,7 @@ module.exports = ReactEventEmitterMixin;
 
 
 /***/ },
-/* 157 */
+/* 156 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -24289,7 +24261,7 @@ module.exports = ViewportMetrics;
 
 
 /***/ },
-/* 158 */
+/* 157 */
 /***/ function(module, exports, __webpack_require__) {
 
 /**
@@ -24355,6 +24327,41 @@ function isEventSupported(eventNameSuffix, capture) {
 }
 
 module.exports = isEventSupported;
+
+
+/***/ },
+/* 158 */
+/***/ function(module, exports, __webpack_require__) {
+
+/**
+ * Copyright 2013-2015, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ * @providesModule getEventTarget
+ * @typechecks static-only
+ */
+
+'use strict';
+
+/**
+ * Gets the target node from a native browser event by accounting for
+ * inconsistencies in browser DOM APIs.
+ *
+ * @param {object} nativeEvent Native browser event.
+ * @return {DOMEventTarget} Target node.
+ */
+function getEventTarget(nativeEvent) {
+  var target = nativeEvent.target || nativeEvent.srcElement || window;
+  // Safari may fire events on text nodes (Node.TEXT_NODE is 3).
+  // @see http://www.quirksmode.org/js/events_properties.html
+  return target.nodeType === 3 ? target.parentNode : target;
+}
+
+module.exports = getEventTarget;
 
 
 /***/ },
@@ -24834,7 +24841,7 @@ module.exports = isTextInputElement;
 'use strict';
 
 var SyntheticUIEvent = __webpack_require__(180);
-var ViewportMetrics = __webpack_require__(157);
+var ViewportMetrics = __webpack_require__(156);
 
 var getEventModifierState = __webpack_require__(191);
 
@@ -25958,7 +25965,7 @@ module.exports = SyntheticTouchEvent;
 
 var SyntheticEvent = __webpack_require__(106);
 
-var getEventTarget = __webpack_require__(155);
+var getEventTarget = __webpack_require__(158);
 
 /**
  * @interface UIEvent
